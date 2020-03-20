@@ -1,6 +1,7 @@
 {
     "files": [
         "pdf.ttf",
-        "chi_tra_vert.traineddata"
+        "chi_tra.traineddata",
+        "eng.traineddata"
     ]
 }

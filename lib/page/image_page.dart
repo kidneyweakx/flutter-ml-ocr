@@ -23,6 +23,7 @@ import 'dart:io';
 import 'dart:async';
 import 'dart:ui' as ui;
 import 'dart:typed_data';
+import 'dart:math' as math;
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -32,7 +33,7 @@ import 'package:flutter/rendering.dart';
 
 import 'package:image/image.dart' as ImageUtil;
 import 'package:firebase_ml_vision/firebase_ml_vision.dart';
-//import 'package:translator/translator.dart';
+import 'package:translator/translator.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:tesseract_ocr/tesseract_ocr.dart';
 
@@ -67,7 +68,6 @@ class _CropPageState extends State<CropPage>
   double oldScale = 1.0;
   double _scale = 1.0;
   double oldRotate = 0.0;
-  bool _ml = true;
 
   double rotate = 0.0;
   Offset topLeft = new Offset(40.0, 60.0);
@@ -97,21 +97,21 @@ class _CropPageState extends State<CropPage>
 
   Future<String> readText() async {
     var img = await localPath;
-    if (_ml) {
-      FirebaseVisionImage ourImage = FirebaseVisionImage.fromFilePath(img);
-      TextRecognizer recognizeText = FirebaseVision.instance.textRecognizer();
-      VisionText readText = await recognizeText.processImage(ourImage);
-      return readText.text;
-      // GoogleTranslator translator = GoogleTranslator();
-      // return translator.translate(readText.text, to: 'zh-tw');
-    } else {
-      String extract =
-          await TesseractOcr.extractText(img, language: "chi_tra_vert");
-      return extract;
-    }
+    FirebaseVisionImage ourImage = FirebaseVisionImage.fromFilePath(img);
+    TextRecognizer recognizeText = FirebaseVision.instance.textRecognizer();
+    VisionText readText = await recognizeText.processImage(ourImage);
+    // return readText.text;
+    GoogleTranslator translator = GoogleTranslator();
+    return translator.translate(readText.text, to: 'zh-tw');
   }
 
-  Future<void> _capturePng() async {
+  Future<String> tessText() async {
+    var img = await localPath;
+    String extract = await TesseractOcr.extractText(img, language: "chi_tra");
+    return extract;
+  }
+
+  Future<void> _capturePng(bool ml) async {
     RenderRepaintBoundary boundary =
         globalKey.currentContext.findRenderObject();
     double pixelRatio = 1.5;
@@ -143,7 +143,11 @@ class _CropPageState extends State<CropPage>
     var codec = await ui.instantiateImageCodec(byteList);
     var frame = await codec.getNextFrame();
 
-    String txt = await readText();
+    String txt = '';
+    if (ml)
+      txt = await tessText();
+    else
+      txt = await readText();
     print(txt);
 
     //重置
@@ -157,9 +161,9 @@ class _CropPageState extends State<CropPage>
                 title: 'crop', ocrContent: txt, image: frame.image)));
   }
 
-  void doCapturePng() async {
+  void doCapturePng(bool _ml) async {
     _controller.repeat();
-    _capturePng();
+    _capturePng(_ml);
   }
 
   void onPanStart(DragStartDetails dragInfo) {
@@ -328,12 +332,6 @@ class _CropPageState extends State<CropPage>
     ));
   }
 
-  void _mlChange() {
-    setState(() {
-      _ml = !_ml;
-    });
-  }
-
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -481,6 +479,57 @@ class _CropPageState extends State<CropPage>
               child: new Container(color: Colors.blue),
             )),
         new Positioned(
+          top: maskTop - 2,
+          left: this.maskLeft - 2,
+          child: new GestureDetector(
+              child: new Image.asset("assets/topLeft.png"),
+              onPanStart: onPanStart,
+              onPanUpdate: (dragInfo) {
+                this.onPanUpdate("topleft", dragInfo);
+              },
+              onPanEnd: onPanEnd),
+        ),
+        new Positioned(
+          top: maskTop - 2,
+          right: (MediaQuery.of(context).size.width -
+              this.maskWidth -
+              this.maskLeft -
+              2),
+          child: new GestureDetector(
+              child: new Image.asset("assets/topRight.png"),
+              onPanStart: onPanStart,
+              onPanUpdate: (dragInfo) {
+                this.onPanUpdate("topright", dragInfo);
+              },
+              onPanEnd: onPanEnd),
+        ),
+        new Positioned(
+          top: this.maskTop + this.maskHeight - 12.0,
+          left: this.maskLeft - 2,
+          child: new GestureDetector(
+              child: new Image.asset("assets/bottomLeft.png"),
+              onPanStart: onPanStart,
+              onPanUpdate: (dragInfo) {
+                this.onPanUpdate("bottomleft", dragInfo);
+              },
+              onPanEnd: onPanEnd),
+        ),
+        new Positioned(
+          top: this.maskTop + this.maskHeight - 12.0,
+          right: (MediaQuery.of(context).size.width -
+              this.maskWidth -
+              this.maskLeft -
+              2),
+          child: new GestureDetector(
+            child: new Image.asset("assets/bottomRight.png"),
+            onPanStart: onPanStart,
+            onPanUpdate: (dragInfo) {
+              this.onPanUpdate("bottomright", dragInfo);
+            },
+            onPanEnd: onPanEnd,
+          ),
+        ),
+        new Positioned(
           bottom: 10.0,
           height: 40.0,
           width: 40.0,
@@ -500,7 +549,7 @@ class _CropPageState extends State<CropPage>
           width: 40.0,
           right: 20.0,
           child: new RaisedButton(
-              onPressed: doCapturePng,
+              onPressed: () => doCapturePng(true),
               padding: EdgeInsets.all(10.0),
               splashColor: Colors.white,
               shape: new RoundedRectangleBorder(
@@ -508,13 +557,14 @@ class _CropPageState extends State<CropPage>
               child: new Icon(Icons.check, size: 20.0, color: Colors.red)),
         ),
         new Positioned(
-          bottom: 20.0,
+          bottom: 10.0,
           height: 40.0,
           width: 40.0,
-          left: (MediaQuery.of(context).size.width / 2 - 30.0),
+          left: (MediaQuery.of(context).size.width / 2 - 20.0),
           child: new RaisedButton(
-              onPressed: () => _mlChange,
+              onPressed: () => doCapturePng(false),
               padding: EdgeInsets.all(10.0),
+              splashColor: Colors.white,
               shape: new RoundedRectangleBorder(
                   borderRadius: BorderRadius.all(Radius.circular(40.0))),
               child: new Icon(Icons.translate, size: 20.0, color: Colors.red)),
