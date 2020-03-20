@@ -34,6 +34,7 @@ import 'package:image/image.dart' as ImageUtil;
 import 'package:firebase_ml_vision/firebase_ml_vision.dart';
 //import 'package:translator/translator.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:tesseract_ocr/tesseract_ocr.dart';
 
 import '../helper/rotatescale.dart';
 import 'result_page.dart';
@@ -66,7 +67,7 @@ class _CropPageState extends State<CropPage>
   double oldScale = 1.0;
   double _scale = 1.0;
   double oldRotate = 0.0;
-  String _text = "";
+  bool _ml = true;
 
   double rotate = 0.0;
   Offset topLeft = new Offset(40.0, 60.0);
@@ -96,12 +97,18 @@ class _CropPageState extends State<CropPage>
 
   Future<String> readText() async {
     var img = await localPath;
-    FirebaseVisionImage ourImage = FirebaseVisionImage.fromFilePath(img);
-    TextRecognizer recognizeText = FirebaseVision.instance.textRecognizer();
-    VisionText readText = await recognizeText.processImage(ourImage);
-    return readText.text;
-    // GoogleTranslator translator = GoogleTranslator();
-    // return translator.translate(readText.text, to: 'zh-tw');
+    if (_ml) {
+      FirebaseVisionImage ourImage = FirebaseVisionImage.fromFilePath(img);
+      TextRecognizer recognizeText = FirebaseVision.instance.textRecognizer();
+      VisionText readText = await recognizeText.processImage(ourImage);
+      return readText.text;
+      // GoogleTranslator translator = GoogleTranslator();
+      // return translator.translate(readText.text, to: 'zh-tw');
+    } else {
+      String extract =
+          await TesseractOcr.extractText(img, language: "chi_tra_vert");
+      return extract;
+    }
   }
 
   Future<void> _capturePng() async {
@@ -136,9 +143,8 @@ class _CropPageState extends State<CropPage>
     var codec = await ui.instantiateImageCodec(byteList);
     var frame = await codec.getNextFrame();
 
-    String txt;
-    txt = await readText();
-    print(_text);
+    String txt = await readText();
+    print(txt);
 
     //重置
     _controller.reset();
@@ -322,6 +328,12 @@ class _CropPageState extends State<CropPage>
     ));
   }
 
+  void _mlChange() {
+    setState(() {
+      _ml = !_ml;
+    });
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -494,7 +506,19 @@ class _CropPageState extends State<CropPage>
               shape: new RoundedRectangleBorder(
                   borderRadius: BorderRadius.all(Radius.circular(40.0))),
               child: new Icon(Icons.check, size: 20.0, color: Colors.red)),
-        )
+        ),
+        new Positioned(
+          bottom: 20.0,
+          height: 40.0,
+          width: 40.0,
+          left: (MediaQuery.of(context).size.width / 2 - 30.0),
+          child: new RaisedButton(
+              onPressed: () => _mlChange,
+              padding: EdgeInsets.all(10.0),
+              shape: new RoundedRectangleBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(40.0))),
+              child: new Icon(Icons.translate, size: 20.0, color: Colors.red)),
+        ),
       ],
     );
   }
