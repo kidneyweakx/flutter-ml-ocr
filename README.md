@@ -1,7 +1,7 @@
 # flutter-OCR
 *(Optical Character Recognition)*
 
-app using firebase ml-kit[https://firebase.google.com/docs/ml-kit/android/recognize-text]
+app using [firebase ml-kit](https://firebase.google.com/docs/ml-kit/android/recognize-text)
 and [tesseract](https://pub.dev/packages/tesseract_ocr) to OCR
 
 ## Getting Started
