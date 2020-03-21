@@ -67,7 +67,7 @@ class ResultState extends State<ResultPage> {
             splashColor: Colors.white,
             shape: new RoundedRectangleBorder(
                 borderRadius: BorderRadius.all(Radius.circular(40.0))),
-            child: new Icon(Icons.arrow_back_ios, size: 20.0, color: Colors.red)),
+            child: new Icon(Icons.arrow_back_ios, size: 20.0, color: Colors.blueAccent)),
       ),
     ])));
   }

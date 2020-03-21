@@ -152,7 +152,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
             padding: EdgeInsets.all(10.0),
             shape: new RoundedRectangleBorder(
                 borderRadius: BorderRadius.all(Radius.circular(60.0))),
-            child: new Icon(Icons.photo_camera, size: 40.0, color: Colors.red)),
+            child: new Icon(Icons.photo_camera, size: 40.0, color: Colors.blueAccent)),
       ),
       new Positioned(
         bottom: 20.0,
@@ -165,7 +165,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
             shape: new RoundedRectangleBorder(
                 borderRadius: BorderRadius.all(Radius.circular(40.0))),
             child: new Icon(Icons.photo_library,
-                size: 20.0, color: Colors.red)),
+                size: 20.0, color: Colors.blueAccent)),
       ),
     ]);
   }

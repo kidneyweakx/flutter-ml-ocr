@@ -19,32 +19,26 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-import 'dart:io';
 import 'dart:async';
 import 'dart:ui' as ui;
 import 'dart:typed_data';
-import 'dart:math' as math;
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/rendering.dart';
-//import 'package:dio/dio.dart';
-
 import 'package:image/image.dart' as ImageUtil;
-import 'package:firebase_ml_vision/firebase_ml_vision.dart';
-import 'package:translator/translator.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:tesseract_ocr/tesseract_ocr.dart';
 
+import '../helper/identify.dart';
 import '../helper/rotatescale.dart';
+import '../helper/helper.dart';
 import 'result_page.dart';
 
 class CropPage extends StatefulWidget {
   CropPage({Key key, this.title, this.image, this.imageInfo}) : super(key: key);
   final String title;
   final ui.Image image;
-  ImageInfo imageInfo;
+  final ImageInfo imageInfo;
   @override
   _CropPageState createState() => new _CropPageState();
 }
@@ -74,9 +68,11 @@ class _CropPageState extends State<CropPage>
   Matrix4 matrix = new Matrix4.identity();
   GlobalKey imgKey = new GlobalKey();
   AnimationController _controller; // scan animate
+  Identify _identify;
   @override
   void initState() {
     super.initState();
+    _identify = new Identify();
     _controller =
         new AnimationController(duration: new Duration(seconds: 3), vsync: this)
           ..addListener(() {
@@ -90,28 +86,7 @@ class _CropPageState extends State<CropPage>
         () => ImageUtil.copyCrop(image, corpX, corpY, corpWidth, corpHeight));
   }
 
-  Future<String> get localPath async {
-    final dir = await getApplicationDocumentsDirectory();
-    return ('${dir.path}/Pictures/tmp.jpg');
-  }
-
-  Future<String> readText() async {
-    var img = await localPath;
-    FirebaseVisionImage ourImage = FirebaseVisionImage.fromFilePath(img);
-    TextRecognizer recognizeText = FirebaseVision.instance.textRecognizer();
-    VisionText readText = await recognizeText.processImage(ourImage);
-    // return readText.text;
-    GoogleTranslator translator = GoogleTranslator();
-    return translator.translate(readText.text, to: 'zh-tw');
-  }
-
-  Future<String> tessText() async {
-    var img = await localPath;
-    String extract = await TesseractOcr.extractText(img, language: "chi_tra");
-    return extract;
-  }
-
-  Future<void> _capturePng(bool ml) async {
+  Future<Uint8List> _cropImg() async {
     RenderRepaintBoundary boundary =
         globalKey.currentContext.findRenderObject();
     double pixelRatio = 1.5;
@@ -135,19 +110,20 @@ class _CropPageState extends State<CropPage>
         " " +
         corpHeight.toString());
     var nImage = await copyCrop(uImage, corpX, corpY, corpWidth, corpHeight);
-    List<int> byteList = ImageUtil.encodePng(nImage);
+    return ImageUtil.encodePng(nImage);
+  }
 
-    var path = await localPath;
-    File img = new File(path);
-    img.writeAsBytesSync(byteList);
+  Future<void> _capturePng(bool ml) async {
+    List<int> byteList = await _cropImg();
+    await _identify.writeImg(byteList);
     var codec = await ui.instantiateImageCodec(byteList);
     var frame = await codec.getNextFrame();
 
     String txt = '';
     if (ml)
-      txt = await tessText();
+      txt = await _identify.tessText();
     else
-      txt = await readText();
+      txt = await _identify.readText();
     print(txt);
 
     //重置
@@ -541,20 +517,7 @@ class _CropPageState extends State<CropPage>
               shape: new RoundedRectangleBorder(
                   borderRadius: BorderRadius.all(Radius.circular(40.0))),
               child: new Icon(Icons.arrow_back_ios,
-                  size: 20.0, color: Colors.red)),
-        ),
-        new Positioned(
-          bottom: 10.0,
-          height: 40.0,
-          width: 40.0,
-          right: 20.0,
-          child: new RaisedButton(
-              onPressed: () => doCapturePng(true),
-              padding: EdgeInsets.all(10.0),
-              splashColor: Colors.white,
-              shape: new RoundedRectangleBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(40.0))),
-              child: new Icon(Icons.check, size: 20.0, color: Colors.red)),
+                  size: 20.0, color: Colors.blueAccent)),
         ),
         new Positioned(
           bottom: 10.0,
@@ -567,7 +530,20 @@ class _CropPageState extends State<CropPage>
               splashColor: Colors.white,
               shape: new RoundedRectangleBorder(
                   borderRadius: BorderRadius.all(Radius.circular(40.0))),
-              child: new Icon(Icons.translate, size: 20.0, color: Colors.red)),
+              child: new Icon(Icons.translate, size: 20.0, color: Colors.blueAccent)),
+        ),
+        new Positioned(
+          bottom: 10.0,
+          height: 40.0,
+          width: 40.0,
+          right: 20.0,
+          child: new RaisedButton(
+              onPressed: () => doCapturePng(true),
+              padding: EdgeInsets.all(10.0),
+              splashColor: Colors.white,
+              shape: new RoundedRectangleBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(40.0))),
+              child: new Icon(Icons.check, size: 20.0, color: Colors.blueAccent)),
         ),
       ],
     );
@@ -589,69 +565,5 @@ class _CropPageState extends State<CropPage>
   void dispose() {
     _controller.dispose();
     super.dispose();
-  }
-}
-
-class GridPainter extends CustomPainter {
-  GridPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    Paint paint = new Paint()
-      ..color = Colors.white
-      ..strokeCap = StrokeCap.round
-      ..isAntiAlias = true;
-
-    for (int i = 0; i <= 3; i++) {
-      if (i == 0 || i == 3) {
-        paint.strokeWidth = 3.0;
-      } else {
-        paint.strokeWidth = 1.0;
-      }
-      double dy = (size.height / 3) * i;
-      canvas.drawLine(new Offset(0.0, dy), new Offset(size.width, dy), paint);
-    }
-    for (int i = 0; i <= 3; i++) {
-      if (i == 0 || i == 3) {
-        paint.strokeWidth = 3.0;
-      } else {
-        paint.strokeWidth = 1.0;
-      }
-      double dx = (size.width / 3) * i;
-      canvas.drawLine(new Offset(dx, 0.0), new Offset(dx, size.height), paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) {
-    return true;
-  }
-}
-
-class ImagePositionDelegate extends SingleChildLayoutDelegate {
-  final double imageWidth;
-  final double imageHeight;
-  final Offset topLeft;
-
-  const ImagePositionDelegate(this.imageWidth, this.imageHeight, this.topLeft);
-
-  @override
-  Offset getPositionForChild(Size size, Size childSize) {
-    return topLeft;
-  }
-
-  @override
-  BoxConstraints getConstraintsForChild(BoxConstraints constraints) {
-    return new BoxConstraints(
-      maxWidth: imageWidth,
-      maxHeight: imageHeight,
-      minHeight: imageHeight,
-      minWidth: imageWidth,
-    );
-  }
-
-  @override
-  bool shouldRelayout(SingleChildLayoutDelegate oldDelegate) {
-    return true;
   }
 }
