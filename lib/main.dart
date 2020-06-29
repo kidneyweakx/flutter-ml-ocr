@@ -17,11 +17,11 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return new MaterialApp(
-      title: 'croper',
+      title: 'tesseract OCR',
       theme: new ThemeData(
         primarySwatch: Colors.brown,
       ),
-      home: new MyHomePage(title: 'croper',cameras: cameras),
+      home: new MyHomePage(cameras: cameras),
     );
   }
 }

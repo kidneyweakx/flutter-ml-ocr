@@ -3,9 +3,8 @@ import 'package:flutter/cupertino.dart';
 import 'dart:ui' as ui;
 
 class ResultPage extends StatefulWidget {
-  ResultPage({Key key, this.title, this.image, this.ocrContent})
+  ResultPage({Key key, this.image, this.ocrContent})
       : super(key: key);
-  final String title;
   final ui.Image image;
   final String ocrContent;
 

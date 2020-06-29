@@ -1,6 +1,26 @@
+// MIT License
+
+// Copyright (c) 2018 luyongfugx
+
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
 import 'dart:ui' as ui;
 import 'dart:io';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
@@ -13,8 +33,7 @@ import 'image_page.dart';
 
 
 class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key, this.title, this.cameras}) : super(key: key);
-  final String title;
+  MyHomePage({Key key, this.cameras}) : super(key: key);
   final List<CameraDescription> cameras;
 
   @override
@@ -23,20 +42,7 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   CameraController controller;
-  double maskTop = 60.0;
-  double maskLeft = 60.0;
-  double maskWidth = 200.0;
-  double maskHeight = 200.0;
-  double dragStartX = 0.0;
-  double dragStartY = 0.0;
-  double imgDragStartX = 0.0;
-  double imgDragStartY = 0.0;
-  double oldScale = 1.0;
-  double oldRotate = 0.0;
-  double rotate = 0.0;
   ImageInfo imageInfo;
-  Offset topLeft = new Offset(0.0, 0.0);
-  Matrix4 matrix = new Matrix4.identity();
 
   // open camera
   @override
@@ -82,7 +88,6 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
               context,
               new MaterialPageRoute(
                   builder: (context) => new CropPage(
-                      title: 'crop',
                       image: image,
                       imageInfo: new ImageInfo(image: image, scale: 1.0))));
         }
@@ -116,7 +121,6 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
               context,
               new MaterialPageRoute(
                   builder: (context) => new CropPage(
-                      title: 'crop',
                       image: image,
                       imageInfo: new ImageInfo(image: image, scale: 1.0))));
         });

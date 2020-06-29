@@ -35,8 +35,7 @@ import '../helper/helper.dart';
 import 'result_page.dart';
 
 class CropPage extends StatefulWidget {
-  CropPage({Key key, this.title, this.image, this.imageInfo}) : super(key: key);
-  final String title;
+  CropPage({Key key, this.image, this.imageInfo}) : super(key: key);
   final ui.Image image;
   final ImageInfo imageInfo;
   @override
@@ -134,7 +133,7 @@ class _CropPageState extends State<CropPage>
         context,
         new MaterialPageRoute(
             builder: (context) => new ResultPage(
-                title: 'crop', ocrContent: txt, image: frame.image)));
+                ocrContent: txt, image: frame.image)));
   }
 
   void doCapturePng(bool _ml) async {
